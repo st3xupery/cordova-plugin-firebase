@@ -246,6 +246,26 @@ static FirebasePlugin *firebasePlugin;
     }
 }
 
+- (void)sendNotification:(NSDictionary *)userInfo fetchCompletionHandler:(void (^)(UIBackgroundFetchResult))completionHandler {
+    if (self.notificationCallbackId != nil) {
+        CDVPluginResult *pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsDictionary:userInfo];
+        [pluginResult setKeepCallbackAsBool:YES];
+        [self.commandDelegate sendPluginResult:pluginResult callbackId:self.notificationCallbackId];
+        completionHandler(UIBackgroundFetchResultNewData);
+    } else {
+        if (!self.notificationStack) {
+            self.notificationStack = [[NSMutableArray alloc] init];
+        }
+
+        // stack notifications until a callback has been registered
+        [self.notificationStack addObject:userInfo];
+
+        if ([self.notificationStack count] >= kNotificationStackSize) {
+            [self.notificationStack removeLastObject];
+        }
+    }
+}
+
 - (void)sendToken:(NSString *)token {
     if (self.tokenRefreshCallbackId != nil) {
         CDVPluginResult *pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:token];
